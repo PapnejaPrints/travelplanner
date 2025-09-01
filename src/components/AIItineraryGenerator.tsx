@@ -5,11 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { AIItinerary, AISuggestion } from "@/types/ai";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Plane, Hotel, Utensils, MapPin } from "lucide-react";
+import { format } from "date-fns"; // Import format from date-fns
 
 interface AIItineraryGeneratorProps {
   origin: string;
   destination: string;
   budget: number;
+  startDate: Date; // New prop for start date
+  endDate: Date;   // New prop for end date
   onAddSuggestedActivity: (suggestion: AISuggestion) => void;
 }
 
@@ -17,11 +20,13 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
   origin,
   destination,
   budget,
+  startDate,
+  endDate,
   onAddSuggestedActivity,
 }) => {
   const [itinerary, setItinerary] = useState<AIItinerary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorDetails, setErrorDetails] = useState<string | null>(null); // New state for error details
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const fetchItinerary = async () => {
     setIsLoading(true);
@@ -29,19 +34,24 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
     setErrorDetails(null); // Clear previous error details
     try {
       const { data, error } = await supabase.functions.invoke("generate-itinerary", {
-        body: { origin, destination, budget },
+        body: {
+          origin,
+          destination,
+          budget,
+          startDate: format(startDate, "yyyy-MM-dd"), // Format dates for the API
+          endDate: format(endDate, "yyyy-MM-dd"),     // Format dates for the API
+        },
       });
 
       if (error) {
         console.error("Error invoking Edge Function:", error);
         const errorMessage = error.message || "Unknown error from Edge Function.";
         const details = error.context?.body?.error || error.context?.body?.details || errorMessage;
-        setErrorDetails(details); // Set error details
+        setErrorDetails(details);
         toast.error(`Failed to get AI itinerary: ${details}`);
         return;
       }
 
-      // Check if the data itself contains an error property from the Edge Function's JSON response
       if (data && typeof data === 'object' && 'error' in data) {
         const errorMessage = data.error || "AI response indicated an error.";
         const details = data.details || errorMessage;
@@ -55,7 +65,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
     } catch (error: any) {
       console.error("Unexpected error:", error);
       const errorMessage = error.message || "An unexpected error occurred while generating the itinerary.";
-      setErrorDetails(errorMessage); // Set error details
+      setErrorDetails(errorMessage);
       toast.error(`An unexpected error occurred: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -67,7 +77,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">AI Itinerary Generator</CardTitle>
         <CardDescription className="text-center">
-          Let Gemini plan your full trip from {origin} to {destination} with a budget of ${budget.toLocaleString()}.
+          Let Gemini plan your full trip from {origin} to {destination} from {format(startDate, "MMM dd")} to {format(endDate, "MMM dd")} with a budget of ${budget.toLocaleString()}.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

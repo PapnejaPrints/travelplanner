@@ -1,26 +1,32 @@
 import React, { useState } from "react";
 import DestinationInput from "@/components/DestinationInput";
 import BudgetInput from "@/components/BudgetInput";
-import OriginInput from "@/components/OriginInput"; // Import the new OriginInput
+import OriginInput from "@/components/OriginInput";
+import TravelDatesInput from "@/components/TravelDatesInput"; // Import the new TravelDatesInput
 import ActivityInput from "@/components/ActivityInput";
 import ActivityList from "@/components/ActivityList";
-import AIItineraryGenerator from "@/components/AIItineraryGenerator"; // Import the new AIItineraryGenerator
+import AIItineraryGenerator from "@/components/AIItineraryGenerator";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "@/types/travel";
-import { AISuggestion } from "@/types/ai"; // Import AISuggestion type
+import { AISuggestion } from "@/types/ai";
+import { format } from "date-fns"; // Import format from date-fns
 
 const TravelPlanner: React.FC = () => {
   const [currentOrigin, setCurrentOrigin] = useState<string | null>(null);
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
   const [currentBudget, setCurrentBudget] = useState<number | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null); // New state for start date
+  const [endDate, setEndDate] = useState<Date | null>(null);     // New state for end date
   const [activities, setActivities] = useState<Activity[]>([]);
 
   const handleOriginSubmit = (origin: string) => {
     setCurrentOrigin(origin);
     setCurrentDestination(null);
     setCurrentBudget(null);
+    setStartDate(null); // Reset dates
+    setEndDate(null);   // Reset dates
     setActivities([]);
     console.log("Origin submitted:", origin);
   };
@@ -28,13 +34,25 @@ const TravelPlanner: React.FC = () => {
   const handleDestinationSubmit = (destination: string) => {
     setCurrentDestination(destination);
     setCurrentBudget(null);
+    setStartDate(null); // Reset dates
+    setEndDate(null);   // Reset dates
     setActivities([]);
     console.log("Destination submitted:", destination);
   };
 
   const handleBudgetSubmit = (budget: number) => {
     setCurrentBudget(budget);
+    setStartDate(null); // Reset dates
+    setEndDate(null);   // Reset dates
+    setActivities([]);
     console.log("Budget submitted:", budget);
+  };
+
+  const handleDatesSubmit = (start: Date, end: Date) => {
+    setStartDate(start);
+    setEndDate(end);
+    setActivities([]); // Reset activities when dates change
+    console.log("Dates submitted:", start, end);
   };
 
   const handleAddActivity = (activity: Activity) => {
@@ -49,7 +67,7 @@ const TravelPlanner: React.FC = () => {
     const newActivity: Activity = {
       id: Date.now().toString(), // Simple unique ID
       name: suggestion.name,
-      date: "TBD", // Placeholder, user can edit later
+      date: startDate ? format(startDate, "yyyy-MM-dd") : "TBD", // Use start date as placeholder
       time: "TBD", // Placeholder, user can edit later
       cost: suggestion.estimatedCost,
     };
@@ -60,6 +78,8 @@ const TravelPlanner: React.FC = () => {
     setCurrentOrigin(null);
     setCurrentDestination(null);
     setCurrentBudget(null);
+    setStartDate(null);
+    setEndDate(null);
     setActivities([]);
   };
 
@@ -72,6 +92,8 @@ const TravelPlanner: React.FC = () => {
           <DestinationInput onDestinationSubmit={handleDestinationSubmit} />
         ) : !currentBudget ? (
           <BudgetInput onBudgetSubmit={handleBudgetSubmit} />
+        ) : !startDate || !endDate ? ( // New condition for dates
+          <TravelDatesInput onDatesSubmit={handleDatesSubmit} />
         ) : (
           <>
             <Card className="w-full max-w-md mx-auto text-center p-6">
@@ -81,6 +103,8 @@ const TravelPlanner: React.FC = () => {
                 </CardTitle>
                 <CardDescription className="text-lg text-gray-700 dark:text-gray-300">
                   Budget: <span className="font-bold text-green-600 dark:text-green-400">${currentBudget.toLocaleString()}</span>
+                  <br />
+                  Dates: <span className="font-bold">{format(startDate, "MMM dd, yyyy")} - {format(endDate, "MMM dd, yyyy")}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -93,6 +117,8 @@ const TravelPlanner: React.FC = () => {
               origin={currentOrigin}
               destination={currentDestination}
               budget={currentBudget}
+              startDate={startDate} // Pass start date
+              endDate={endDate}   // Pass end date
               onAddSuggestedActivity={handleAddSuggestedActivity}
             />
             <ActivityInput onAddActivity={handleAddActivity} />

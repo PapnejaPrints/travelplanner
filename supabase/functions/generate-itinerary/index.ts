@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, budget } = await req.json();
+    const { origin, destination, budget, startDate, endDate } = await req.json();
 
-    if (!origin || !destination || !budget) {
-      console.error("Missing required fields:", { origin, destination, budget });
-      return new Response(JSON.stringify({ error: "Origin, destination, and budget are required." }), {
+    if (!origin || !destination || !budget || !startDate || !endDate) {
+      console.error("Missing required fields:", { origin, destination, budget, startDate, endDate });
+      return new Response(JSON.stringify({ error: "Origin, destination, budget, start date, and end date are required." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
@@ -33,7 +33,7 @@ serve(async (req) => {
     console.log(`GEMINI_API_KEY loaded: ${GEMINI_API_KEY.length > 0 ? 'Yes' : 'No'}`);
 
 
-    const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} with a total budget of $${budget}.
+    const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} with a total budget of $${budget}.
     The itinerary should include:
     1.  **Transportation:** Suggest a mode of transport (e.g., flight, train, bus) and an estimated cost.
     2.  **Accommodation:** Suggest a type of accommodation (e.g., hotel, Airbnb) and an estimated cost.
@@ -68,7 +68,7 @@ serve(async (req) => {
     }`;
 
     const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`;
-    console.log("Calling Gemini API at:", geminiApiUrl); // Log the API URL
+    console.log("Calling Gemini API at:", geminiApiUrl);
 
     const geminiResponse = await fetch(
       geminiApiUrl,
@@ -76,7 +76,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-goog-api-key": GEMINI_API_KEY, // API key moved to header
+          "X-goog-api-key": GEMINI_API_KEY,
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
@@ -104,9 +104,7 @@ serve(async (req) => {
       });
     }
 
-    // Attempt to clean and parse the JSON response
     let jsonString = textResponse.trim();
-    // Remove markdown code block wrappers if present
     if (jsonString.startsWith("```json")) {
       jsonString = jsonString.substring(7);
     }
@@ -126,10 +124,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         error: "AI response could not be parsed as valid JSON.", 
         details: parseError.message,
-        rawAIResponse: textResponse // Include the raw response for debugging
+        rawAIResponse: textResponse
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400, // Bad Request because AI output was malformed
+        status: 400,
       });
     }
 
