@@ -3,7 +3,7 @@ import DestinationInput from "@/components/DestinationInput";
 import BudgetInput from "@/components/BudgetInput";
 import OriginInput from "@/components/OriginInput";
 import TravelDatesInput from "@/components/TravelDatesInput";
-import NumberOfTravelersInput from "@/components/NumberOfTravelersInput"; // Import the new component
+import NumberOfTravelersInput from "@/components/NumberOfTravelersInput";
 import ActivityInput from "@/components/ActivityInput";
 import ActivityList from "@/components/ActivityList";
 import AIItineraryGenerator from "@/components/AIItineraryGenerator";
@@ -14,14 +14,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Activity } from "@/types/travel";
 import { AIItinerary, AISuggestion } from "@/types/ai";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const TravelPlanner: React.FC = () => {
+  const navigate = useNavigate(); // Initialize useNavigate
   const [currentOrigin, setCurrentOrigin] = useState<string | null>(null);
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
   const [currentBudget, setCurrentBudget] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [numberOfTravelers, setNumberOfTravelers] = useState<number | null>(null); // New state for number of travelers
+  const [numberOfTravelers, setNumberOfTravelers] = useState<number | null>(null);
   const [generatedItinerary, setGeneratedItinerary] = useState<AIItinerary | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
@@ -31,7 +33,7 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
-    setNumberOfTravelers(null); // Reset
+    setNumberOfTravelers(null);
     setGeneratedItinerary(null);
     setActivities([]);
   };
@@ -41,7 +43,7 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
-    setNumberOfTravelers(null); // Reset
+    setNumberOfTravelers(null);
     setGeneratedItinerary(null);
     setActivities([]);
   };
@@ -50,7 +52,7 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(budget);
     setStartDate(null);
     setEndDate(null);
-    setNumberOfTravelers(null); // Reset
+    setNumberOfTravelers(null);
     setGeneratedItinerary(null);
     setActivities([]);
   };
@@ -58,14 +60,14 @@ const TravelPlanner: React.FC = () => {
   const handleDatesSubmit = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
-    setNumberOfTravelers(null); // Reset
+    setNumberOfTravelers(null);
     setGeneratedItinerary(null);
     setActivities([]);
   };
 
   const handleTravelersSubmit = (count: number) => {
     setNumberOfTravelers(count);
-    setGeneratedItinerary(null); // Reset
+    setGeneratedItinerary(null);
     setActivities([]);
   };
 
@@ -103,6 +105,23 @@ const TravelPlanner: React.FC = () => {
     setActivities([]);
   };
 
+  const handleFinalizeItinerary = () => {
+    if (currentOrigin && currentDestination && currentBudget && startDate && endDate && numberOfTravelers && generatedItinerary) {
+      navigate("/itinerary-summary", {
+        state: {
+          origin: currentOrigin,
+          destination: currentDestination,
+          budget: currentBudget,
+          startDate: startDate,
+          endDate: endDate,
+          numberOfTravelers: numberOfTravelers,
+          generatedItinerary: generatedItinerary,
+          userActivities: activities,
+        },
+      });
+    }
+  };
+
   // Calculate total cost of all activities added by the user
   const totalActivitiesCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
 
@@ -126,7 +145,7 @@ const TravelPlanner: React.FC = () => {
           <BudgetInput onBudgetSubmit={handleBudgetSubmit} />
         ) : !startDate || !endDate ? (
           <TravelDatesInput onDatesSubmit={handleDatesSubmit} />
-        ) : !numberOfTravelers ? ( // New step for number of travelers
+        ) : !numberOfTravelers ? (
           <NumberOfTravelersInput onTravelersSubmit={handleTravelersSubmit} />
         ) : !generatedItinerary ? (
           <AIItineraryGenerator
@@ -135,7 +154,7 @@ const TravelPlanner: React.FC = () => {
             budget={currentBudget}
             startDate={startDate}
             endDate={endDate}
-            numberOfTravelers={numberOfTravelers} // Pass to AIItineraryGenerator
+            numberOfTravelers={numberOfTravelers}
             onItineraryGenerated={handleItineraryGenerated}
           />
         ) : (
@@ -154,8 +173,11 @@ const TravelPlanner: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleReset} className="mt-4">
+                <Button onClick={handleReset} className="mt-4 mr-2">
                   Start Over
+                </Button>
+                <Button onClick={handleFinalizeItinerary} className="mt-4 ml-2">
+                  Finalize Itinerary
                 </Button>
               </CardContent>
             </Card>
@@ -166,7 +188,7 @@ const TravelPlanner: React.FC = () => {
               budget={currentBudget}
               startDate={startDate}
               endDate={endDate}
-              numberOfTravelers={numberOfTravelers} // Pass to AIItineraryGenerator
+              numberOfTravelers={numberOfTravelers}
               onItineraryGenerated={handleItineraryGenerated}
             />
 
