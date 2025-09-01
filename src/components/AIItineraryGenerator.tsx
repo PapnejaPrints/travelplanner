@@ -21,10 +21,12 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
 }) => {
   const [itinerary, setItinerary] = useState<AIItinerary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null); // New state for error details
 
   const fetchItinerary = async () => {
     setIsLoading(true);
     setItinerary(null); // Clear previous itinerary
+    setErrorDetails(null); // Clear previous error details
     try {
       const { data, error } = await supabase.functions.invoke("generate-itinerary", {
         body: { origin, destination, budget },
@@ -32,15 +34,29 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
 
       if (error) {
         console.error("Error invoking Edge Function:", error);
-        toast.error("Failed to get AI itinerary. Please ensure your Gemini API key is set correctly and try again.");
+        const errorMessage = error.message || "Unknown error from Edge Function.";
+        const details = error.context?.body?.error || error.context?.body?.details || errorMessage;
+        setErrorDetails(details); // Set error details
+        toast.error(`Failed to get AI itinerary: ${details}`);
+        return;
+      }
+
+      // Check if the data itself contains an error property from the Edge Function's JSON response
+      if (data && typeof data === 'object' && 'error' in data) {
+        const errorMessage = data.error || "AI response indicated an error.";
+        const details = data.details || errorMessage;
+        setErrorDetails(details);
+        toast.error(`Failed to get AI itinerary: ${details}`);
         return;
       }
 
       setItinerary(data as AIItinerary);
       toast.success("AI itinerary generated successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred while generating the itinerary.");
+      const errorMessage = error.message || "An unexpected error occurred while generating the itinerary.";
+      setErrorDetails(errorMessage); // Set error details
+      toast.error(`An unexpected error occurred: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +84,14 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
             </>
           )}
         </Button>
+
+        {errorDetails && (
+          <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
+            <strong className="font-bold">Error:</strong>
+            <span className="block sm:inline ml-2">{errorDetails}</span>
+            <p className="text-sm mt-2">Please check your Supabase Edge Function logs and ensure your `GEMINI_API_KEY` is set correctly in Supabase Environment Variables.</p>
+          </div>
+        )}
 
         {itinerary && (
           <div className="space-y-6 mt-4">
