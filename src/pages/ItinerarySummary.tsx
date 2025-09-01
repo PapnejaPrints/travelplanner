@@ -2,9 +2,9 @@ import React, { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { format, parseISO, isSameDay, isBefore } from "date-fns";
+import { format, parseISO, isBefore } from "date-fns";
 import { Activity, CombinedActivity } from "@/types/travel";
-import { AIItinerary, AISuggestion } from "@/types/ai";
+import { AIItinerary } from "@/types/ai";
 import { ArrowLeft, Plane, Hotel, Utensils, CalendarDays, Users, DollarSign, MapPin, Clock } from "lucide-react";
 
 interface ItinerarySummaryState {
@@ -46,30 +46,19 @@ const ItinerarySummary: React.FC = () => {
     userActivities,
   } = state;
 
-  // Combine AI activities and user activities
+  // Only include user-added activities (which already includes selected AI suggestions)
   const allActivities: CombinedActivity[] = useMemo(() => {
-    const aiActivities: CombinedActivity[] = generatedItinerary.activities.map((act) => ({
-      id: `ai-${act.name}-${Math.random().toString(36).substring(7)}`, // Unique ID for AI activities
-      name: act.name,
-      description: act.description,
-      date: startDate ? format(startDate, "yyyy-MM-dd") : "TBD", // Placeholder, AI doesn't provide specific dates
-      time: "12:00", // Placeholder, AI doesn't provide specific times
-      cost: act.estimatedCost,
-      source: 'ai',
-    }));
-
     const userAddedActivities: CombinedActivity[] = userActivities.map((act) => ({
       id: act.id,
       name: act.name,
+      description: undefined, // User-added activities don't typically have AI descriptions
       date: act.date,
       time: act.time,
       cost: act.cost,
-      source: 'user',
+      source: 'user', // All activities here are considered user-selected/added
     }));
 
-    // For simplicity, AI activities are placed on the start date.
-    // In a more complex app, AI might suggest dates or user could assign them.
-    return [...aiActivities, ...userAddedActivities].sort((a, b) => {
+    return userAddedActivities.sort((a, b) => {
       const dateA = parseISO(a.date);
       const dateB = parseISO(b.date);
       if (isBefore(dateA, dateB)) return -1;
@@ -77,7 +66,7 @@ const ItinerarySummary: React.FC = () => {
       // If same day, sort by time
       return a.time.localeCompare(b.time);
     });
-  }, [generatedItinerary.activities, userActivities, startDate]);
+  }, [userActivities]);
 
   // Group activities by day
   const activitiesByDay = useMemo(() => {
@@ -165,7 +154,7 @@ const ItinerarySummary: React.FC = () => {
                     <div>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         {activity.time} - {activity.name}
-                        {activity.source === 'ai' && <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">AI Suggestion</span>}
+                        {/* Removed AI Suggestion badge as all activities here are user-selected/added */}
                       </p>
                       {activity.description && (
                         <p className="text-sm text-gray-700 dark:text-gray-300">{activity.description}</p>
