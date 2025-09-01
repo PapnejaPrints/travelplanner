@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, budget, startDate, endDate } = await req.json();
+    const { origin, destination, budget, startDate, endDate, numberOfTravelers } = await req.json();
 
-    if (!origin || !destination || !budget || !startDate || !endDate) {
-      console.error("Missing required fields:", { origin, destination, budget, startDate, endDate });
-      return new Response(JSON.stringify({ error: "Origin, destination, budget, start date, and end date are required." }), {
+    if (!origin || !destination || !budget || !startDate || !endDate || !numberOfTravelers) {
+      console.error("Missing required fields:", { origin, destination, budget, startDate, endDate, numberOfTravelers });
+      return new Response(JSON.stringify({ error: "Origin, destination, budget, start date, end date, and number of travelers are required." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
@@ -33,7 +33,7 @@ serve(async (req) => {
     console.log(`GEMINI_API_KEY loaded: ${GEMINI_API_KEY.length > 0 ? 'Yes' : 'No'}`);
 
 
-    const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} with a total budget of $${budget}.
+    const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} for ${numberOfTravelers} people with a total budget of $${budget}.
     When generating costs, please provide realistic estimates and then *simulate exact costs* as if you had performed a real-time web search for current market prices for flights and accommodations. These simulated exact costs should be plausible and reflect typical pricing fluctuations.
 
     The itinerary should include:

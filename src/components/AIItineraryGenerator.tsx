@@ -13,7 +13,8 @@ interface AIItineraryGeneratorProps {
   budget: number;
   startDate: Date;
   endDate: Date;
-  onItineraryGenerated: (itinerary: AIItinerary) => void; // New prop to pass itinerary back
+  numberOfTravelers: number; // New prop
+  onItineraryGenerated: (itinerary: AIItinerary) => void;
 }
 
 const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
@@ -22,6 +23,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
   budget,
   startDate,
   endDate,
+  numberOfTravelers, // Destructure new prop
   onItineraryGenerated,
 }) => {
   const [itinerary, setItinerary] = useState<AIItinerary | null>(null);
@@ -41,6 +43,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
             budget,
             startDate: format(startDate, "yyyy-MM-dd"),
             endDate: format(endDate, "yyyy-MM-dd"),
+            numberOfTravelers, // Pass to Edge Function
           },
         });
 
@@ -50,7 +53,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
           const details = error.context?.body?.error || error.context?.body?.details || errorMessage;
           setErrorDetails(details);
           toast.error(`Failed to get AI itinerary: ${details}`);
-          onItineraryGenerated(null); // Indicate failure
+          onItineraryGenerated(null);
           return;
         }
 
@@ -59,29 +62,29 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
           const details = data.details || errorMessage;
           setErrorDetails(details);
           toast.error(`Failed to get AI itinerary: ${details}`);
-          onItineraryGenerated(null); // Indicate failure
+          onItineraryGenerated(null);
           return;
         }
 
         setItinerary(data as AIItinerary);
-        onItineraryGenerated(data as AIItinerary); // Pass the generated itinerary back
+        onItineraryGenerated(data as AIItinerary);
         toast.success("AI itinerary generated successfully!");
       } catch (error: any) {
         console.error("Unexpected error:", error);
         const errorMessage = error.message || "An unexpected error occurred while generating the itinerary.";
         setErrorDetails(errorMessage);
         toast.error(`An unexpected error occurred: ${errorMessage}`);
-        onItineraryGenerated(null); // Indicate failure
+        onItineraryGenerated(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     // Only fetch if all required props are available and no itinerary is already set
-    if (origin && destination && budget && startDate && endDate && !itinerary && !isLoading) {
+    if (origin && destination && budget && startDate && endDate && numberOfTravelers && !itinerary && !isLoading) {
       fetchItinerary();
     }
-  }, [origin, destination, budget, startDate, endDate, onItineraryGenerated, itinerary, isLoading]);
+  }, [origin, destination, budget, startDate, endDate, numberOfTravelers, onItineraryGenerated, itinerary, isLoading]);
 
   if (isLoading) {
     return (
@@ -111,7 +114,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
   }
 
   if (!itinerary) {
-    return null; // Don't render anything until an itinerary is generated or an error occurs
+    return null;
   }
 
   // Calculate total for transportation, accommodation, and food
@@ -125,7 +128,7 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Your AI-Generated Itinerary</CardTitle>
         <CardDescription className="text-center">
-          Here's a plan for your trip from {origin} to {destination} from {format(startDate, "MMM dd")} to {format(endDate, "MMM dd")}.
+          Here's a plan for {numberOfTravelers} people for your trip from {origin} to {destination} from {format(startDate, "MMM dd")} to {format(endDate, "MMM dd")}.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

@@ -3,10 +3,11 @@ import DestinationInput from "@/components/DestinationInput";
 import BudgetInput from "@/components/BudgetInput";
 import OriginInput from "@/components/OriginInput";
 import TravelDatesInput from "@/components/TravelDatesInput";
+import NumberOfTravelersInput from "@/components/NumberOfTravelersInput"; // Import the new component
 import ActivityInput from "@/components/ActivityInput";
 import ActivityList from "@/components/ActivityList";
 import AIItineraryGenerator from "@/components/AIItineraryGenerator";
-import AISuggestions from "@/components/AISuggestions"; // Keep AISuggestions for later
+import AISuggestions from "@/components/AISuggestions";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,8 @@ const TravelPlanner: React.FC = () => {
   const [currentBudget, setCurrentBudget] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [generatedItinerary, setGeneratedItinerary] = useState<AIItinerary | null>(null); // New state for generated itinerary
+  const [numberOfTravelers, setNumberOfTravelers] = useState<number | null>(null); // New state for number of travelers
+  const [generatedItinerary, setGeneratedItinerary] = useState<AIItinerary | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
   const handleOriginSubmit = (origin: string) => {
@@ -29,7 +31,8 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
-    setGeneratedItinerary(null); // Reset itinerary
+    setNumberOfTravelers(null); // Reset
+    setGeneratedItinerary(null);
     setActivities([]);
   };
 
@@ -38,7 +41,8 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
-    setGeneratedItinerary(null); // Reset itinerary
+    setNumberOfTravelers(null); // Reset
+    setGeneratedItinerary(null);
     setActivities([]);
   };
 
@@ -46,14 +50,22 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(budget);
     setStartDate(null);
     setEndDate(null);
-    setGeneratedItinerary(null); // Reset itinerary
+    setNumberOfTravelers(null); // Reset
+    setGeneratedItinerary(null);
     setActivities([]);
   };
 
   const handleDatesSubmit = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
-    setGeneratedItinerary(null); // Reset itinerary
+    setNumberOfTravelers(null); // Reset
+    setGeneratedItinerary(null);
+    setActivities([]);
+  };
+
+  const handleTravelersSubmit = (count: number) => {
+    setNumberOfTravelers(count);
+    setGeneratedItinerary(null); // Reset
     setActivities([]);
   };
 
@@ -86,6 +98,7 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
+    setNumberOfTravelers(null);
     setGeneratedItinerary(null);
     setActivities([]);
   };
@@ -113,18 +126,19 @@ const TravelPlanner: React.FC = () => {
           <BudgetInput onBudgetSubmit={handleBudgetSubmit} />
         ) : !startDate || !endDate ? (
           <TravelDatesInput onDatesSubmit={handleDatesSubmit} />
+        ) : !numberOfTravelers ? ( // New step for number of travelers
+          <NumberOfTravelersInput onTravelersSubmit={handleTravelersSubmit} />
         ) : !generatedItinerary ? (
-          // Render AIItineraryGenerator to automatically fetch the itinerary
           <AIItineraryGenerator
             origin={currentOrigin}
             destination={currentDestination}
             budget={currentBudget}
             startDate={startDate}
             endDate={endDate}
+            numberOfTravelers={numberOfTravelers} // Pass to AIItineraryGenerator
             onItineraryGenerated={handleItineraryGenerated}
           />
         ) : (
-          // Once itinerary is generated, display it and then activity inputs
           <>
             <Card className="w-full max-w-md mx-auto text-center p-6">
               <CardHeader>
@@ -135,6 +149,8 @@ const TravelPlanner: React.FC = () => {
                   Budget: <span className="font-bold text-green-600 dark:text-green-400">${currentBudget.toLocaleString()}</span>
                   <br />
                   Dates: <span className="font-bold">{format(startDate, "MMM dd, yyyy")} - {format(endDate, "MMM dd, yyyy")}</span>
+                  <br />
+                  Travelers: <span className="font-bold">{numberOfTravelers}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -144,17 +160,16 @@ const TravelPlanner: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Display the generated itinerary from AIItineraryGenerator */}
             <AIItineraryGenerator
               origin={currentOrigin}
               destination={currentDestination}
               budget={currentBudget}
               startDate={startDate}
               endDate={endDate}
-              onItineraryGenerated={handleItineraryGenerated} // Still pass this, but it won't re-fetch if itinerary is already set
+              numberOfTravelers={numberOfTravelers} // Pass to AIItineraryGenerator
+              onItineraryGenerated={handleItineraryGenerated}
             />
 
-            {/* Grand Total Card */}
             <Card className="w-full max-w-md mx-auto bg-blue-100 dark:bg-blue-900/20 border-blue-400 dark:border-blue-700 text-blue-800 dark:text-blue-200 p-4 text-center">
               <CardTitle className="text-2xl font-bold">
                 Grand Total: ${grandTotal.toLocaleString()}
@@ -164,7 +179,6 @@ const TravelPlanner: React.FC = () => {
               </CardDescription>
             </Card>
 
-            {/* Prompt for activities */}
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4 text-center">
               Now, let's plan your activities!
             </h2>
