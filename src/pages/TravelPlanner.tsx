@@ -173,11 +173,8 @@ const TravelPlanner: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button onClick={handleReset} className="mt-4 mr-2">
+                <Button onClick={handleReset} className="mt-4">
                   Start Over
-                </Button>
-                <Button onClick={handleFinalizeItinerary} className="mt-4 ml-2">
-                  Finalize Itinerary
                 </Button>
               </CardContent>
             </Card>
@@ -215,6 +212,13 @@ const TravelPlanner: React.FC = () => {
           </>
         )}
       </div>
+      {generatedItinerary && (
+        <div className="w-full max-w-md mx-auto mt-8 mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-center">
+          <Button onClick={handleFinalizeItinerary} className="w-full text-lg py-3">
+            Finalize and Summarize Itinerary
+          </Button>
+        </div>
+      )}
       <MadeWithDyad />
     </div>
   );
