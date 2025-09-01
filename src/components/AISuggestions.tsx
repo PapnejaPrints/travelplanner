@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AISuggestion } from "@/types/ai";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react"; // Removed Sparkles as button is removed
 
 interface AISuggestionsProps {
   destination: string;
@@ -15,7 +15,7 @@ interface AISuggestionsProps {
 const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAddSuggestedActivity }) => {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAdding, setIsAdding] = useState(false); // New state for when an individual activity is being added/replaced
+  const [isAdding, setIsAdding] = useState(false);
 
   const fetchSuggestions = async (numToFetch: number | null = null, append: boolean = false) => {
     setIsLoading(true);
@@ -44,7 +44,7 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAd
       } else {
         setSuggestions(newSuggestions);
       }
-      toast.success("AI suggestions loaded!");
+      // toast.success("AI suggestions loaded!"); // Removed for automatic loading to avoid spamming toasts
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred while fetching suggestions.");
@@ -52,6 +52,13 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAd
       setIsLoading(false);
     }
   };
+
+  // Automatically fetch suggestions when destination or budget changes
+  useEffect(() => {
+    if (destination && budget) {
+      fetchSuggestions(3); // Fetch 3 suggestions initially
+    }
+  }, [destination, budget]);
 
   const handleAddAndReplace = async (addedSuggestion: AISuggestion) => {
     setIsAdding(true);
@@ -89,25 +96,16 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAd
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">AI Activity Suggestions</CardTitle>
         <CardDescription className="text-center">
-          Let Gemini suggest some activities for your trip to {destination}.
+          Here are some activities Gemini suggests for your trip to {destination}.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Button onClick={() => fetchSuggestions()} disabled={isLoading} className="w-full">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Getting Suggestions...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Get AI Suggestions
-            </>
-          )}
-        </Button>
-
-        {suggestions.length > 0 && (
+        {isLoading && suggestions.length === 0 ? ( // Show loader only if no suggestions are loaded yet
+          <div className="flex justify-center items-center p-4">
+            <Loader2 className="mr-2 h-6 w-6 animate-spin text-blue-500 dark:text-blue-400" />
+            <span className="text-lg text-gray-600 dark:text-gray-400">Getting Suggestions...</span>
+          </div>
+        ) : suggestions.length > 0 ? (
           <div className="space-y-3 mt-4">
             <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Suggested Activities:</h4>
             {suggestions.map((suggestion, index) => (
@@ -120,7 +118,7 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAd
                   size="sm"
                   className="mt-2 w-full"
                   onClick={() => handleAddAndReplace(suggestion)}
-                  disabled={isAdding} // Disable button while adding/replacing
+                  disabled={isAdding}
                 >
                   {isAdding ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -131,6 +129,8 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({ destination, budget, onAd
               </div>
             ))}
           </div>
+        ) : (
+          <p className="text-center text-gray-500 dark:text-gray-400">No suggestions available. Try adjusting your budget or destination.</p>
         )}
       </CardContent>
     </Card>

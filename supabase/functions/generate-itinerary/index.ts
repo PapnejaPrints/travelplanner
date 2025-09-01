@@ -34,6 +34,7 @@ serve(async (req) => {
 
 
     const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} for ${numberOfTravelers} people with a total budget of $${budget}.
+    **Important:** Correct any obvious misspellings in the city names (origin/destination) before generating the response.
     When generating costs, please provide realistic estimates and then *simulate exact costs* as if you had performed a real-time web search for current market prices for flights and accommodations. These simulated exact costs should be plausible and reflect typical pricing fluctuations.
 
     The itinerary should include:

@@ -35,7 +35,8 @@ serve(async (req) => {
     // Determine how many suggestions to ask for
     const numSuggestions = count && typeof count === 'number' && count > 0 ? count : '3-5';
 
-    const prompt = `You are a helpful travel assistant. Given a destination of "${destination}" and a budget of $${budget}, suggest ${numSuggestions} unique and interesting activities. For each activity, provide a brief description and an estimated cost.
+    const prompt = `You are a helpful travel assistant. Given a a destination of "${destination}" and a budget of $${budget}, suggest ${numSuggestions} unique and interesting activities. For each activity, provide a brief description and an estimated cost.
+    **Important:** Correct any obvious misspellings in the destination city name before generating the response.
     Ensure the estimated costs are realistic and the total for these activities fits within a reasonable portion of the overall budget.
     Format the output as a single JSON array of objects with the following structure, and include ONLY the JSON array in your response, no other text or markdown:
     [
