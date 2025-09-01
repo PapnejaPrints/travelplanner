@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import DestinationInput from "@/components/DestinationInput";
 import BudgetInput from "@/components/BudgetInput";
-import ActivityInput from "@/components/ActivityInput"; // Import the new ActivityInput component
-import ActivityList from "@/components/ActivityList"; // Import the new ActivityList component
+import ActivityInput from "@/components/ActivityInput";
+import ActivityList from "@/components/ActivityList";
+import AISuggestions from "@/components/AISuggestions"; // Import the new AISuggestions component
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity } from "@/types/travel"; // Import the Activity type
+import { Activity } from "@/types/travel";
+import { AISuggestion } from "@/types/ai"; // Import AISuggestion type
 
 const TravelPlanner: React.FC = () => {
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
@@ -31,6 +33,17 @@ const TravelPlanner: React.FC = () => {
 
   const handleDeleteActivity = (id: string) => {
     setActivities((prevActivities) => prevActivities.filter((activity) => activity.id !== id));
+  };
+
+  const handleAddSuggestedActivity = (suggestion: AISuggestion) => {
+    const newActivity: Activity = {
+      id: Date.now().toString(), // Simple unique ID
+      name: suggestion.name,
+      date: "TBD", // Placeholder, user can edit later
+      time: "TBD", // Placeholder, user can edit later
+      cost: suggestion.estimatedCost,
+    };
+    handleAddActivity(newActivity);
   };
 
   const handleReset = () => {
@@ -63,6 +76,11 @@ const TravelPlanner: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
+            <AISuggestions
+              destination={currentDestination}
+              budget={currentBudget}
+              onAddSuggestedActivity={handleAddSuggestedActivity}
+            />
             <ActivityInput onAddActivity={handleAddActivity} />
             <ActivityList activities={activities} onDeleteActivity={handleDeleteActivity} />
           </>
