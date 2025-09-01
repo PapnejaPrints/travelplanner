@@ -1,15 +1,28 @@
 import React, { useState } from "react";
 import DestinationInput from "@/components/DestinationInput";
+import BudgetInput from "@/components/BudgetInput"; // Import the new BudgetInput component
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Button } from "@/components/ui/button"; // Added missing import
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Import Card components for consistent styling
 
 const TravelPlanner: React.FC = () => {
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
+  const [currentBudget, setCurrentBudget] = useState<number | null>(null);
 
   const handleDestinationSubmit = (destination: string) => {
     setCurrentDestination(destination);
-    // In a real app, you would fetch data or navigate here
+    setCurrentBudget(null); // Reset budget when destination changes
     console.log("Destination submitted:", destination);
+  };
+
+  const handleBudgetSubmit = (budget: number) => {
+    setCurrentBudget(budget);
+    console.log("Budget submitted:", budget);
+  };
+
+  const handleReset = () => {
+    setCurrentDestination(null);
+    setCurrentBudget(null);
   };
 
   return (
@@ -17,18 +30,30 @@ const TravelPlanner: React.FC = () => {
       <div className="flex-grow flex items-center justify-center w-full">
         {!currentDestination ? (
           <DestinationInput onDestinationSubmit={handleDestinationSubmit} />
+        ) : !currentBudget ? (
+          <BudgetInput onBudgetSubmit={handleBudgetSubmit} />
         ) : (
-          <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-            <h2 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Planning your trip to <span className="text-blue-600 dark:text-blue-400">{currentDestination}</span>!
-            </h2>
-            <p className="text-lg text-gray-700 dark:text-gray-300">
-              Great choice! We'll start building your itinerary for this destination.
-            </p>
-            <Button onClick={() => setCurrentDestination(null)} className="mt-6">
-              Plan Another Trip
-            </Button>
-          </div>
+          <Card className="w-full max-w-md mx-auto text-center p-6">
+            <CardHeader>
+              <CardTitle className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Your Trip Details
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-700 dark:text-gray-300">
+                Ready to plan activities for your adventure!
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xl mb-2">
+                Destination: <span className="font-bold text-blue-600 dark:text-blue-400">{currentDestination}</span>
+              </p>
+              <p className="text-xl mb-4">
+                Budget: <span className="font-bold text-green-600 dark:text-green-400">${currentBudget.toLocaleString()}</span>
+              </p>
+              <Button onClick={handleReset} className="mt-6">
+                Start Over
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
       <MadeWithDyad />
