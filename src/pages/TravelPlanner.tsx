@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import DestinationInput from "@/components/DestinationInput";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import { Button } from "@/components/ui/button"; // Added missing import
 
 const TravelPlanner: React.FC = () => {
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
