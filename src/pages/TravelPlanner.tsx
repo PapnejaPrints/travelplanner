@@ -132,7 +132,7 @@ const TravelPlanner: React.FC = () => {
       generatedItinerary.food.estimatedCost
     : 0;
 
-  const grandTotal = coreItineraryTotal + totalActivitiesCost;
+  const grandTotal = coreItineraryTotal + totalActivitiesCost; // Still needed for state passing, but not displayed here
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -189,14 +189,7 @@ const TravelPlanner: React.FC = () => {
               onItineraryGenerated={handleItineraryGenerated}
             />
 
-            <Card className="w-full max-w-md mx-auto bg-blue-100 dark:bg-blue-900/20 border-blue-400 dark:border-blue-700 text-blue-800 dark:text-blue-200 p-4 text-center">
-              <CardTitle className="text-2xl font-bold">
-                Grand Total: ${grandTotal.toLocaleString()}
-              </CardTitle>
-              <CardDescription className="mt-1">
-                (Core Itinerary + Your Activities)
-              </CardDescription>
-            </Card>
+            {/* Removed the Grand Total card from this page */}
 
             <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4 text-center">
               Now, let's plan your activities!
