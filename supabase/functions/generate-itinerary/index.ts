@@ -68,7 +68,7 @@ serve(async (req) => {
     }`;
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, // Changed v1beta to v1
       {
         method: "POST",
         headers: {
