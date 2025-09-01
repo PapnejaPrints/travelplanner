@@ -34,6 +34,8 @@ serve(async (req) => {
 
 
     const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} with a total budget of $${budget}.
+    When generating costs, please provide realistic estimates and then *simulate exact costs* as if you had performed a real-time web search for current market prices for flights and accommodations. These simulated exact costs should be plausible and reflect typical pricing fluctuations.
+
     The itinerary should include:
     1.  **Transportation:** Suggest a mode of transport (e.g., flight, train, bus), details, an estimated cost, and a *simulated exact cost* as if you queried a booking API.
     2.  **Accommodation:** Suggest a type of accommodation (e.g., hotel, Airbnb), name, description, an estimated cost, and a *simulated exact cost* as if you queried a booking API.
