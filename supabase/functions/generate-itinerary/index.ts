@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Added for potential future use, though not strictly needed for Gemini API call
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +30,8 @@ serve(async (req) => {
         status: 500,
       });
     }
+    console.log(`GEMINI_API_KEY loaded: ${GEMINI_API_KEY.length > 0 ? 'Yes' : 'No'}`);
+
 
     const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} with a total budget of $${budget}.
     The itinerary should include:
@@ -112,13 +114,26 @@ serve(async (req) => {
     console.log("Raw Gemini text response:", textResponse);
     console.log("Cleaned JSON string:", jsonString);
 
-    const itinerary = JSON.parse(jsonString);
+    let itinerary;
+    try {
+      itinerary = JSON.parse(jsonString);
+    } catch (parseError: any) {
+      console.error("Failed to parse Gemini response as JSON:", parseError.message);
+      return new Response(JSON.stringify({ 
+        error: "AI response could not be parsed as valid JSON.", 
+        details: parseError.message,
+        rawAIResponse: textResponse // Include the raw response for debugging
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, // Bad Request because AI output was malformed
+      });
+    }
 
     return new Response(JSON.stringify(itinerary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in Edge Function:", error.message, error.stack);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
