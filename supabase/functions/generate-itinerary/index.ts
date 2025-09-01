@@ -43,7 +43,7 @@ serve(async (req) => {
     3.  **Food:** Suggest a general food budget or a few meal ideas with estimated costs.
     4.  **Activities:** Suggest 3-5 unique and interesting activities with a brief description and estimated cost for each.
 
-    Ensure the total estimated cost for the entire trip (transportation + accommodation + food + all activities) does not exceed the budget.
+    Aim for the total estimated cost for the entire trip (transportation + accommodation + food + all activities) to be as realistic as possible and close to the provided budget. It is acceptable for the total to slightly exceed the budget if it leads to a more realistic and comprehensive plan.
     Format the output as a single JSON object with the following structure, and include ONLY the JSON object in your response, no other text or markdown:
     {
       "transportation": {
