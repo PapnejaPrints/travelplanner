@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react"; // Import useEffect
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { format, parseISO, isBefore } from "date-fns";
 import { Activity, CombinedActivity } from "@/types/travel";
 import { AIItinerary } from "@/types/ai";
 import { ArrowLeft, Plane, Hotel, Utensils, CalendarDays, Users, DollarSign, MapPin, Clock } from "lucide-react";
-import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts'; // Import Recharts components
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 
 interface ItinerarySummaryState {
   origin: string;
@@ -23,6 +23,11 @@ const ItinerarySummary: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as ItinerarySummaryState;
+
+  // Scroll to top when the component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (!state) {
     return (
