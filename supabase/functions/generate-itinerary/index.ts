@@ -35,8 +35,8 @@ serve(async (req) => {
 
     const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} from ${startDate} to ${endDate} with a total budget of $${budget}.
     The itinerary should include:
-    1.  **Transportation:** Suggest a mode of transport (e.g., flight, train, bus) and an estimated cost.
-    2.  **Accommodation:** Suggest a type of accommodation (e.g., hotel, Airbnb) and an estimated cost.
+    1.  **Transportation:** Suggest a mode of transport (e.g., flight, train, bus), details, an estimated cost, and a *simulated exact cost* as if you queried a booking API.
+    2.  **Accommodation:** Suggest a type of accommodation (e.g., hotel, Airbnb), name, description, an estimated cost, and a *simulated exact cost* as if you queried a booking API.
     3.  **Food:** Suggest a general food budget or a few meal ideas with estimated costs.
     4.  **Activities:** Suggest 3-5 unique and interesting activities with a brief description and estimated cost for each.
 
@@ -46,13 +46,15 @@ serve(async (req) => {
       "transportation": {
         "mode": "string",
         "details": "string",
-        "estimatedCost": number
+        "estimatedCost": number,
+        "exactCost": number
       },
       "accommodation": {
         "type": "string",
         "name": "string",
         "description": "string",
-        "estimatedCost": number
+        "estimatedCost": number,
+        "exactCost": number
       },
       "food": {
         "description": "string",

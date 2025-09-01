@@ -118,6 +118,11 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
               <p className="font-semibold text-blue-700 dark:text-blue-300">
                 Estimated Cost: ${itinerary.transportation.estimatedCost.toLocaleString()}
               </p>
+              {itinerary.transportation.exactCost && (
+                <p className="font-bold text-blue-800 dark:text-blue-200 mt-1">
+                  Simulated Exact Cost: ${itinerary.transportation.exactCost.toLocaleString()}
+                </p>
+              )}
             </div>
 
             {/* Accommodation */}
@@ -131,6 +136,11 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
               <p className="font-semibold text-purple-700 dark:text-purple-300">
                 Estimated Cost: ${itinerary.accommodation.estimatedCost.toLocaleString()}
               </p>
+              {itinerary.accommodation.exactCost && (
+                <p className="font-bold text-purple-800 dark:text-purple-200 mt-1">
+                  Simulated Exact Cost: ${itinerary.accommodation.exactCost.toLocaleString()}
+                </p>
+              )}
             </div>
 
             {/* Food */}
