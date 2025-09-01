@@ -6,6 +6,7 @@ import { format, parseISO, isBefore } from "date-fns";
 import { Activity, CombinedActivity } from "@/types/travel";
 import { AIItinerary } from "@/types/ai";
 import { ArrowLeft, Plane, Hotel, Utensils, CalendarDays, Users, DollarSign, MapPin, Clock } from "lucide-react";
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts'; // Import Recharts components
 
 interface ItinerarySummaryState {
   origin: string;
@@ -46,16 +47,15 @@ const ItinerarySummary: React.FC = () => {
     userActivities,
   } = state;
 
-  // Only include user-added activities (which already includes selected AI suggestions)
   const allActivities: CombinedActivity[] = useMemo(() => {
     const userAddedActivities: CombinedActivity[] = userActivities.map((act) => ({
       id: act.id,
       name: act.name,
-      description: undefined, // User-added activities don't typically have AI descriptions
+      description: undefined,
       date: act.date,
       time: act.time,
       cost: act.cost,
-      source: 'user', // All activities here are considered user-selected/added
+      source: 'user',
     }));
 
     return userAddedActivities.sort((a, b) => {
@@ -63,12 +63,10 @@ const ItinerarySummary: React.FC = () => {
       const dateB = parseISO(b.date);
       if (isBefore(dateA, dateB)) return -1;
       if (isBefore(dateB, dateA)) return 1;
-      // If same day, sort by time
       return a.time.localeCompare(b.time);
     });
   }, [userActivities]);
 
-  // Group activities by day
   const activitiesByDay = useMemo(() => {
     const days: { [key: string]: CombinedActivity[] } = {};
     allActivities.forEach(activity => {
@@ -81,15 +79,25 @@ const ItinerarySummary: React.FC = () => {
     return days;
   }, [allActivities]);
 
-  // Calculate totals
   const totalActivitiesCost = allActivities.reduce((sum, activity) => sum + activity.cost, 0);
-  const coreItineraryTotal =
-    (generatedItinerary.transportation.exactCost || generatedItinerary.transportation.estimatedCost) +
-    (generatedItinerary.accommodation.exactCost || generatedItinerary.accommodation.estimatedCost) +
-    generatedItinerary.food.estimatedCost;
+  const transportationCost = generatedItinerary.transportation.exactCost || generatedItinerary.transportation.estimatedCost;
+  const accommodationCost = generatedItinerary.accommodation.exactCost || generatedItinerary.accommodation.estimatedCost;
+  const foodCost = generatedItinerary.food.estimatedCost;
+  const coreItineraryTotal = transportationCost + accommodationCost + foodCost;
   const grandTotal = coreItineraryTotal + totalActivitiesCost;
 
-  const tripDuration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end day
+  const tripDuration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  // Data for the pie chart
+  const pieChartData = [
+    { name: 'Transportation', value: transportationCost },
+    { name: 'Accommodation', value: accommodationCost },
+    { name: 'Food', value: foodCost },
+    { name: 'Activities', value: totalActivitiesCost },
+  ];
+
+  // Colors for the pie chart segments
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']; // Blue, Green, Yellow, Orange
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -117,11 +125,25 @@ const ItinerarySummary: React.FC = () => {
             </div>
             <div className="border-t pt-4 mt-4">
               <h3 className="text-2xl font-bold text-center mb-4">Cost Breakdown</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-lg">
-                <p className="flex items-center"><Plane className="mr-2 h-5 w-5 text-blue-600" /> <strong>Transportation:</strong> ${generatedItinerary.transportation.exactCost?.toLocaleString() || generatedItinerary.transportation.estimatedCost.toLocaleString()}</p>
-                <p className="flex items-center"><Hotel className="mr-2 h-5 w-5 text-purple-600" /> <strong>Accommodation:</strong> ${generatedItinerary.accommodation.exactCost?.toLocaleString() || generatedItinerary.accommodation.estimatedCost.toLocaleString()}</p>
-                <p className="flex items-center"><Utensils className="mr-2 h-5 w-5 text-orange-600" /> <strong>Food:</strong> ${generatedItinerary.food.estimatedCost.toLocaleString()}</p>
-                <p className="flex items-center"><CalendarDays className="mr-2 h-5 w-5 text-teal-600" /> <strong>Activities:</strong> ${totalActivitiesCost.toLocaleString()}</p>
+              <div className="h-64 w-full"> {/* Added a fixed height for the chart container */}
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
               <Card className="mt-6 bg-green-100 dark:bg-green-900/20 border-green-400 dark:border-green-700 text-green-800 dark:text-green-200 p-4 text-center">
                 <CardTitle className="text-3xl font-bold">
@@ -154,7 +176,6 @@ const ItinerarySummary: React.FC = () => {
                     <div>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         {activity.time} - {activity.name}
-                        {/* Removed AI Suggestion badge as all activities here are user-selected/added */}
                       </p>
                       {activity.description && (
                         <p className="text-sm text-gray-700 dark:text-gray-300">{activity.description}</p>
