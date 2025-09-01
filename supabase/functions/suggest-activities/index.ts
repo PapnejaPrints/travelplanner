@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { destination, budget } = await req.json();
+    const { destination, budget, count } = await req.json(); // Added 'count'
 
     if (!destination || !budget) {
-      console.error("Missing required fields:", { destination, budget });
+      console.error("Missing required fields:", { destination, budget, count });
       return new Response(JSON.stringify({ error: "Destination and budget are required." }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -32,7 +32,10 @@ serve(async (req) => {
     }
     console.log(`GEMINI_API_KEY loaded: ${GEMINI_API_KEY.length > 0 ? 'Yes' : 'No'}`);
 
-    const prompt = `You are a helpful travel assistant. Given a destination of "${destination}" and a budget of $${budget}, suggest 3-5 unique and interesting activities. For each activity, provide a brief description and an estimated cost.
+    // Determine how many suggestions to ask for
+    const numSuggestions = count && typeof count === 'number' && count > 0 ? count : '3-5';
+
+    const prompt = `You are a helpful travel assistant. Given a destination of "${destination}" and a budget of $${budget}, suggest ${numSuggestions} unique and interesting activities. For each activity, provide a brief description and an estimated cost.
     Ensure the estimated costs are realistic and the total for these activities fits within a reasonable portion of the overall budget.
     Format the output as a single JSON array of objects with the following structure, and include ONLY the JSON array in your response, no other text or markdown:
     [
