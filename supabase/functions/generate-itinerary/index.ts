@@ -67,8 +67,11 @@ serve(async (req) => {
       ]
     }`;
 
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    console.log("Calling Gemini API at:", geminiApiUrl); // Log the API URL
+
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, // Changed v1beta to v1
+      geminiApiUrl,
       {
         method: "POST",
         headers: {
