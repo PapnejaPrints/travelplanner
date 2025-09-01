@@ -2,57 +2,63 @@ import React, { useState } from "react";
 import DestinationInput from "@/components/DestinationInput";
 import BudgetInput from "@/components/BudgetInput";
 import OriginInput from "@/components/OriginInput";
-import TravelDatesInput from "@/components/TravelDatesInput"; // Import the new TravelDatesInput
+import TravelDatesInput from "@/components/TravelDatesInput";
 import ActivityInput from "@/components/ActivityInput";
 import ActivityList from "@/components/ActivityList";
 import AIItineraryGenerator from "@/components/AIItineraryGenerator";
+import AISuggestions from "@/components/AISuggestions"; // Keep AISuggestions for later
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "@/types/travel";
-import { AISuggestion } from "@/types/ai";
-import { format } from "date-fns"; // Import format from date-fns
+import { AIItinerary, AISuggestion } from "@/types/ai";
+import { format } from "date-fns";
 
 const TravelPlanner: React.FC = () => {
   const [currentOrigin, setCurrentOrigin] = useState<string | null>(null);
   const [currentDestination, setCurrentDestination] = useState<string | null>(null);
   const [currentBudget, setCurrentBudget] = useState<number | null>(null);
-  const [startDate, setStartDate] = useState<Date | null>(null); // New state for start date
-  const [endDate, setEndDate] = useState<Date | null>(null);     // New state for end date
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [generatedItinerary, setGeneratedItinerary] = useState<AIItinerary | null>(null); // New state for generated itinerary
   const [activities, setActivities] = useState<Activity[]>([]);
 
   const handleOriginSubmit = (origin: string) => {
     setCurrentOrigin(origin);
     setCurrentDestination(null);
     setCurrentBudget(null);
-    setStartDate(null); // Reset dates
-    setEndDate(null);   // Reset dates
+    setStartDate(null);
+    setEndDate(null);
+    setGeneratedItinerary(null); // Reset itinerary
     setActivities([]);
-    console.log("Origin submitted:", origin);
   };
 
   const handleDestinationSubmit = (destination: string) => {
     setCurrentDestination(destination);
     setCurrentBudget(null);
-    setStartDate(null); // Reset dates
-    setEndDate(null);   // Reset dates
+    setStartDate(null);
+    setEndDate(null);
+    setGeneratedItinerary(null); // Reset itinerary
     setActivities([]);
-    console.log("Destination submitted:", destination);
   };
 
   const handleBudgetSubmit = (budget: number) => {
     setCurrentBudget(budget);
-    setStartDate(null); // Reset dates
-    setEndDate(null);   // Reset dates
+    setStartDate(null);
+    setEndDate(null);
+    setGeneratedItinerary(null); // Reset itinerary
     setActivities([]);
-    console.log("Budget submitted:", budget);
   };
 
   const handleDatesSubmit = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
-    setActivities([]); // Reset activities when dates change
-    console.log("Dates submitted:", start, end);
+    setGeneratedItinerary(null); // Reset itinerary
+    setActivities([]);
+  };
+
+  const handleItineraryGenerated = (itinerary: AIItinerary | null) => {
+    setGeneratedItinerary(itinerary);
   };
 
   const handleAddActivity = (activity: Activity) => {
@@ -80,8 +86,21 @@ const TravelPlanner: React.FC = () => {
     setCurrentBudget(null);
     setStartDate(null);
     setEndDate(null);
+    setGeneratedItinerary(null);
     setActivities([]);
   };
+
+  // Calculate total cost of all activities added by the user
+  const totalActivitiesCost = activities.reduce((sum, activity) => sum + activity.cost, 0);
+
+  // Calculate core itinerary total (transportation, accommodation, food)
+  const coreItineraryTotal = generatedItinerary
+    ? (generatedItinerary.transportation.exactCost || generatedItinerary.transportation.estimatedCost) +
+      (generatedItinerary.accommodation.exactCost || generatedItinerary.accommodation.estimatedCost) +
+      generatedItinerary.food.estimatedCost
+    : 0;
+
+  const grandTotal = coreItineraryTotal + totalActivitiesCost;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -92,9 +111,20 @@ const TravelPlanner: React.FC = () => {
           <DestinationInput onDestinationSubmit={handleDestinationSubmit} />
         ) : !currentBudget ? (
           <BudgetInput onBudgetSubmit={handleBudgetSubmit} />
-        ) : !startDate || !endDate ? ( // New condition for dates
+        ) : !startDate || !endDate ? (
           <TravelDatesInput onDatesSubmit={handleDatesSubmit} />
+        ) : !generatedItinerary ? (
+          // Render AIItineraryGenerator to automatically fetch the itinerary
+          <AIItineraryGenerator
+            origin={currentOrigin}
+            destination={currentDestination}
+            budget={currentBudget}
+            startDate={startDate}
+            endDate={endDate}
+            onItineraryGenerated={handleItineraryGenerated}
+          />
         ) : (
+          // Once itinerary is generated, display it and then activity inputs
           <>
             <Card className="w-full max-w-md mx-auto text-center p-6">
               <CardHeader>
@@ -113,12 +143,35 @@ const TravelPlanner: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Display the generated itinerary from AIItineraryGenerator */}
             <AIItineraryGenerator
               origin={currentOrigin}
               destination={currentDestination}
               budget={currentBudget}
-              startDate={startDate} // Pass start date
-              endDate={endDate}   // Pass end date
+              startDate={startDate}
+              endDate={endDate}
+              onItineraryGenerated={handleItineraryGenerated} // Still pass this, but it won't re-fetch if itinerary is already set
+            />
+
+            {/* Grand Total Card */}
+            <Card className="w-full max-w-md mx-auto bg-blue-100 dark:bg-blue-900/20 border-blue-400 dark:border-blue-700 text-blue-800 dark:text-blue-200 p-4 text-center">
+              <CardTitle className="text-2xl font-bold">
+                Grand Total: ${grandTotal.toLocaleString()}
+              </CardTitle>
+              <CardDescription className="mt-1">
+                (Core Itinerary + Your Activities)
+              </CardDescription>
+            </Card>
+
+            {/* Prompt for activities */}
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-8 mb-4 text-center">
+              Now, let's plan your activities!
+            </h2>
+
+            <AISuggestions
+              destination={currentDestination}
+              budget={currentBudget}
               onAddSuggestedActivity={handleAddSuggestedActivity}
             />
             <ActivityInput onAddActivity={handleAddActivity} />

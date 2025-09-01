@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AIItinerary, AISuggestion } from "@/types/ai";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Plane, Hotel, Utensils, MapPin } from "lucide-react";
-import { format } from "date-fns"; // Import format from date-fns
+import { Loader2, Sparkles, Plane, Hotel, Utensils } from "lucide-react";
+import { format } from "date-fns";
 
 interface AIItineraryGeneratorProps {
   origin: string;
   destination: string;
   budget: number;
-  startDate: Date; // New prop for start date
-  endDate: Date;   // New prop for end date
-  onAddSuggestedActivity: (suggestion: AISuggestion) => void;
+  startDate: Date;
+  endDate: Date;
+  onItineraryGenerated: (itinerary: AIItinerary) => void; // New prop to pass itinerary back
 }
 
 const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
@@ -22,163 +22,161 @@ const AIItineraryGenerator: React.FC<AIItineraryGeneratorProps> = ({
   budget,
   startDate,
   endDate,
-  onAddSuggestedActivity,
+  onItineraryGenerated,
 }) => {
   const [itinerary, setItinerary] = useState<AIItinerary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
-  const fetchItinerary = async () => {
-    setIsLoading(true);
-    setItinerary(null); // Clear previous itinerary
-    setErrorDetails(null); // Clear previous error details
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-itinerary", {
-        body: {
-          origin,
-          destination,
-          budget,
-          startDate: format(startDate, "yyyy-MM-dd"), // Format dates for the API
-          endDate: format(endDate, "yyyy-MM-dd"),     // Format dates for the API
-        },
-      });
+  useEffect(() => {
+    const fetchItinerary = async () => {
+      setIsLoading(true);
+      setItinerary(null); // Clear previous itinerary
+      setErrorDetails(null); // Clear previous error details
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-itinerary", {
+          body: {
+            origin,
+            destination,
+            budget,
+            startDate: format(startDate, "yyyy-MM-dd"),
+            endDate: format(endDate, "yyyy-MM-dd"),
+          },
+        });
 
-      if (error) {
-        console.error("Error invoking Edge Function:", error);
-        const errorMessage = error.message || "Unknown error from Edge Function.";
-        const details = error.context?.body?.error || error.context?.body?.details || errorMessage;
-        setErrorDetails(details);
-        toast.error(`Failed to get AI itinerary: ${details}`);
-        return;
+        if (error) {
+          console.error("Error invoking Edge Function:", error);
+          const errorMessage = error.message || "Unknown error from Edge Function.";
+          const details = error.context?.body?.error || error.context?.body?.details || errorMessage;
+          setErrorDetails(details);
+          toast.error(`Failed to get AI itinerary: ${details}`);
+          onItineraryGenerated(null); // Indicate failure
+          return;
+        }
+
+        if (data && typeof data === 'object' && 'error' in data) {
+          const errorMessage = data.error || "AI response indicated an error.";
+          const details = data.details || errorMessage;
+          setErrorDetails(details);
+          toast.error(`Failed to get AI itinerary: ${details}`);
+          onItineraryGenerated(null); // Indicate failure
+          return;
+        }
+
+        setItinerary(data as AIItinerary);
+        onItineraryGenerated(data as AIItinerary); // Pass the generated itinerary back
+        toast.success("AI itinerary generated successfully!");
+      } catch (error: any) {
+        console.error("Unexpected error:", error);
+        const errorMessage = error.message || "An unexpected error occurred while generating the itinerary.";
+        setErrorDetails(errorMessage);
+        toast.error(`An unexpected error occurred: ${errorMessage}`);
+        onItineraryGenerated(null); // Indicate failure
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      if (data && typeof data === 'object' && 'error' in data) {
-        const errorMessage = data.error || "AI response indicated an error.";
-        const details = data.details || errorMessage;
-        setErrorDetails(details);
-        toast.error(`Failed to get AI itinerary: ${details}`);
-        return;
-      }
-
-      setItinerary(data as AIItinerary);
-      toast.success("AI itinerary generated successfully!");
-    } catch (error: any) {
-      console.error("Unexpected error:", error);
-      const errorMessage = error.message || "An unexpected error occurred while generating the itinerary.";
-      setErrorDetails(errorMessage);
-      toast.error(`An unexpected error occurred: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
+    // Only fetch if all required props are available and no itinerary is already set
+    if (origin && destination && budget && startDate && endDate && !itinerary && !isLoading) {
+      fetchItinerary();
     }
-  };
+  }, [origin, destination, budget, startDate, endDate, onItineraryGenerated, itinerary, isLoading]);
 
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">AI Itinerary Generator</CardTitle>
-        <CardDescription className="text-center">
-          Let Gemini plan your full trip from {origin} to {destination} from {format(startDate, "MMM dd")} to {format(endDate, "MMM dd")} with a budget of ${budget.toLocaleString()}.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Button onClick={fetchItinerary} disabled={isLoading} className="w-full">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating Itinerary...
-            </>
-          ) : (
-            <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate Full Itinerary
-            </>
-          )}
-        </Button>
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-md mx-auto p-6 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500 dark:text-blue-400 mb-4" />
+        <CardTitle className="text-xl font-bold">Generating Your Full Itinerary...</CardTitle>
+        <CardDescription className="mt-2">This might take a moment as Gemini plans your perfect trip.</CardDescription>
+      </Card>
+    );
+  }
 
-        {errorDetails && (
+  if (errorDetails) {
+    return (
+      <Card className="w-full max-w-md mx-auto p-6">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center text-red-600 dark:text-red-400">Itinerary Generation Failed</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
             <strong className="font-bold">Error:</strong>
             <span className="block sm:inline ml-2">{errorDetails}</span>
             <p className="text-sm mt-2">Please check your Supabase Edge Function logs and ensure your `GEMINI_API_KEY` is set correctly in Supabase Environment Variables.</p>
           </div>
-        )}
+        </CardContent>
+      </Card>
+    );
+  }
 
-        {itinerary && (
-          <div className="space-y-6 mt-4">
-            <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">Your AI-Generated Itinerary:</h4>
+  if (!itinerary) {
+    return null; // Don't render anything until an itinerary is generated or an error occurs
+  }
 
-            {/* Transportation */}
-            <div className="border rounded-md p-4 bg-blue-50 dark:bg-blue-900/20">
-              <h5 className="font-semibold text-lg flex items-center mb-2">
-                <Plane className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" /> Transportation
-              </h5>
-              <p className="text-gray-700 dark:text-gray-300">
-                <span className="font-medium">{itinerary.transportation.mode}:</span> {itinerary.transportation.details}
-              </p>
-              <p className="font-semibold text-blue-700 dark:text-blue-300">
-                Estimated Cost: ${itinerary.transportation.estimatedCost.toLocaleString()}
-              </p>
-              {itinerary.transportation.exactCost && (
-                <p className="font-bold text-blue-800 dark:text-blue-200 mt-1">
-                  Simulated Exact Cost: ${itinerary.transportation.exactCost.toLocaleString()}
-                </p>
-              )}
-            </div>
+  // Calculate total for transportation, accommodation, and food
+  const coreItineraryTotal =
+    (itinerary.transportation.exactCost || itinerary.transportation.estimatedCost) +
+    (itinerary.accommodation.exactCost || itinerary.accommodation.estimatedCost) +
+    itinerary.food.estimatedCost;
 
-            {/* Accommodation */}
-            <div className="border rounded-md p-4 bg-purple-50 dark:bg-purple-900/20">
-              <h5 className="font-semibold text-lg flex items-center mb-2">
-                <Hotel className="mr-2 h-5 w-5 text-purple-600 dark:text-purple-400" /> Accommodation
-              </h5>
-              <p className="text-gray-700 dark:text-gray-300">
-                <span className="font-medium">{itinerary.accommodation.type} - {itinerary.accommodation.name}:</span> {itinerary.accommodation.description}
-              </p>
-              <p className="font-semibold text-purple-700 dark:text-purple-300">
-                Estimated Cost: ${itinerary.accommodation.estimatedCost.toLocaleString()}
-              </p>
-              {itinerary.accommodation.exactCost && (
-                <p className="font-bold text-purple-800 dark:text-purple-200 mt-1">
-                  Simulated Exact Cost: ${itinerary.accommodation.exactCost.toLocaleString()}
-                </p>
-              )}
-            </div>
-
-            {/* Food */}
-            <div className="border rounded-md p-4 bg-orange-50 dark:bg-orange-900/20">
-              <h5 className="font-semibold text-lg flex items-center mb-2">
-                <Utensils className="mr-2 h-5 w-5 text-orange-600 dark:text-orange-400" /> Food
-              </h5>
-              <p className="text-gray-700 dark:text-gray-300">{itinerary.food.description}</p>
-              <p className="font-semibold text-orange-700 dark:text-orange-300">
-                Estimated Cost: ${itinerary.food.estimatedCost.toLocaleString()}
-              </p>
-            </div>
-
-            {/* Activities */}
-            <div className="space-y-3">
-              <h5 className="font-semibold text-lg flex items-center">
-                <MapPin className="mr-2 h-5 w-5 text-green-600 dark:text-green-400" /> Activities
-              </h5>
-              {itinerary.activities.map((activity, index) => (
-                <div key={index} className="border rounded-md p-3 bg-gray-50 dark:bg-gray-800">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{activity.name}</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{activity.description}</p>
-                  <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                    ${activity.estimatedCost.toLocaleString()}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2 w-full"
-                    onClick={() => onAddSuggestedActivity(activity)}
-                  >
-                    Add to My Plan
-                  </Button>
-                </div>
-              ))}
-            </div>
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-center">Your AI-Generated Itinerary</CardTitle>
+        <CardDescription className="text-center">
+          Here's a plan for your trip from {origin} to {destination} from {format(startDate, "MMM dd")} to {format(endDate, "MMM dd")}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="space-y-6">
+          {/* Transportation */}
+          <div className="border rounded-md p-4 bg-blue-50 dark:bg-blue-900/20">
+            <h5 className="font-semibold text-lg flex items-center mb-2">
+              <Plane className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" /> Transportation
+            </h5>
+            <p className="text-gray-700 dark:text-gray-300">
+              <span className="font-medium">{itinerary.transportation.mode}:</span> {itinerary.transportation.details}
+            </p>
+            <p className="font-bold text-blue-800 dark:text-blue-200 mt-1">
+              Exact Cost: ${itinerary.transportation.exactCost?.toLocaleString() || itinerary.transportation.estimatedCost.toLocaleString()}
+            </p>
           </div>
-        )}
+
+          {/* Accommodation */}
+          <div className="border rounded-md p-4 bg-purple-50 dark:bg-purple-900/20">
+            <h5 className="font-semibold text-lg flex items-center mb-2">
+              <Hotel className="mr-2 h-5 w-5 text-purple-600 dark:text-purple-400" /> Accommodation
+            </h5>
+            <p className="text-gray-700 dark:text-gray-300">
+              <span className="font-medium">{itinerary.accommodation.type} - {itinerary.accommodation.name}:</span> {itinerary.accommodation.description}
+            </p>
+            <p className="font-bold text-purple-800 dark:text-purple-200 mt-1">
+              Exact Cost: ${itinerary.accommodation.exactCost?.toLocaleString() || itinerary.accommodation.estimatedCost.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Food */}
+          <div className="border rounded-md p-4 bg-orange-50 dark:bg-orange-900/20">
+            <h5 className="font-semibold text-lg flex items-center mb-2">
+              <Utensils className="mr-2 h-5 w-5 text-orange-600 dark:text-orange-400" /> Food
+            </h5>
+            <p className="text-gray-700 dark:text-gray-300">{itinerary.food.description}</p>
+            <p className="font-bold text-orange-700 dark:text-orange-300">
+              Exact Cost: ${itinerary.food.estimatedCost.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Core Itinerary Total */}
+          <Card className="bg-green-100 dark:bg-green-900/20 border-green-400 dark:border-green-700 text-green-800 dark:text-green-200 p-4 text-center">
+            <CardTitle className="text-xl font-bold">
+              Core Itinerary Total: ${coreItineraryTotal.toLocaleString()}
+            </CardTitle>
+            <CardDescription className="mt-1">
+              (Transportation, Accommodation, and Food)
+            </CardDescription>
+          </Card>
+        </div>
       </CardContent>
     </Card>
   );
