@@ -1,0 +1,128 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Added for potential future use, though not strictly needed for Gemini API call
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { origin, destination, budget } = await req.json();
+
+    if (!origin || !destination || !budget) {
+      console.error("Missing required fields:", { origin, destination, budget });
+      return new Response(JSON.stringify({ error: "Origin, destination, and budget are required." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not set.");
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY not set in environment variables." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    const prompt = `You are a helpful travel planner. Plan a comprehensive travel itinerary for a trip from ${origin} to ${destination} with a total budget of $${budget}.
+    The itinerary should include:
+    1.  **Transportation:** Suggest a mode of transport (e.g., flight, train, bus) and an estimated cost.
+    2.  **Accommodation:** Suggest a type of accommodation (e.g., hotel, Airbnb) and an estimated cost.
+    3.  **Food:** Suggest a general food budget or a few meal ideas with estimated costs.
+    4.  **Activities:** Suggest 3-5 unique and interesting activities with a brief description and estimated cost for each.
+
+    Ensure the total estimated cost for the entire trip (transportation + accommodation + food + all activities) does not exceed the budget.
+    Format the output as a single JSON object with the following structure, and include ONLY the JSON object in your response, no other text or markdown:
+    {
+      "transportation": {
+        "mode": "string",
+        "details": "string",
+        "estimatedCost": number
+      },
+      "accommodation": {
+        "type": "string",
+        "name": "string",
+        "description": "string",
+        "estimatedCost": number
+      },
+      "food": {
+        "description": "string",
+        "estimatedCost": number
+      },
+      "activities": [
+        {
+          "name": "string",
+          "description": "string",
+          "estimatedCost": number
+        }
+      ]
+    }`;
+
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    const geminiData = await geminiResponse.json();
+
+    if (!geminiResponse.ok) {
+      console.error("Gemini API error response:", JSON.stringify(geminiData, null, 2));
+      return new Response(JSON.stringify({ error: "Failed to get suggestions from AI.", details: geminiData }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: geminiResponse.status,
+      });
+    }
+
+    const textResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!textResponse) {
+      console.error("Gemini API response missing text content:", JSON.stringify(geminiData, null, 2));
+      return new Response(JSON.stringify({ error: "AI response was empty or malformed." }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Attempt to clean and parse the JSON response
+    let jsonString = textResponse.trim();
+    // Remove markdown code block wrappers if present
+    if (jsonString.startsWith("```json")) {
+      jsonString = jsonString.substring(7);
+    }
+    if (jsonString.endsWith("```")) {
+      jsonString = jsonString.substring(0, jsonString.length - 3);
+    }
+    jsonString = jsonString.trim();
+
+    console.log("Raw Gemini text response:", textResponse);
+    console.log("Cleaned JSON string:", jsonString);
+
+    const itinerary = JSON.parse(jsonString);
+
+    return new Response(JSON.stringify(itinerary), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Error in Edge Function:", error.message, error.stack);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
+  }
+});
