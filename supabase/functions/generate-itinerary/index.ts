@@ -67,7 +67,7 @@ serve(async (req) => {
       ]
     }`;
 
-    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`;
     console.log("Calling Gemini API at:", geminiApiUrl); // Log the API URL
 
     const geminiResponse = await fetch(
@@ -76,6 +76,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-goog-api-key": GEMINI_API_KEY, // API key moved to header
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
